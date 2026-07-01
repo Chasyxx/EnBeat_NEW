@@ -13,6 +13,7 @@ export class UI {
 		this.controlColorWaveform = null;
 		this.controlColorWaveformInfo = null;
 		this.controlDrawMode = null;
+		this.controlLag = null;
 		this.controlPlaybackMode = null;
 		this.controlPlayBackward = null;
 		this.controlPlayForward = null;
@@ -21,6 +22,11 @@ export class UI {
 		this.controlSampleRateSelect = null;
 		this.controlScale = null;
 		this.controlScaleDown = null;
+		this.controlScaleUp = null;
+		this.controlSRDivisor = null;
+		this.controlSRDivisorUp = null;
+		this.controlSRDivisorDown = null;
+		this.controlThemeStyle = null;
 		this.controlTime = null;
 		this.controlTimeUnits = null;
 		this.controlThemeStyle = null;
@@ -69,6 +75,7 @@ export class UI {
 		this.controlColorWaveform = document.getElementById('control-color-waveform');
 		this.controlColorWaveformInfo = document.getElementById('control-color-waveform-info');
 		this.controlDrawMode = document.getElementById('control-drawmode');
+		this.controlLag = document.getElementById('control-lag');
 		this.controlPlaybackMode = document.getElementById('control-mode');
 		this.controlPlayBackward = document.getElementById('control-play-backward');
 		this.controlPlayForward = document.getElementById('control-play-forward');
@@ -77,9 +84,13 @@ export class UI {
 		this.controlSampleRateSelect = document.getElementById('control-samplerate-select');
 		this.controlScale = document.getElementById('control-scale');
 		this.controlScaleDown = document.getElementById('control-scaledown');
+		this.controlScaleUp = document.getElementById('control-scaleup');
+		this.controlSRDivisor = document.getElementById('control-srdivisor');
+		this.controlSRDivisorUp = document.getElementById('control-srdivisor-up');
+		this.controlSRDivisorDown = document.getElementById('control-srdivisor-down');
+		this.controlThemeStyle = document.getElementById('control-theme-style');
 		this.controlTime = document.getElementById('control-counter');
 		this.controlTimeUnits = document.getElementById('control-counter-units');
-		this.controlThemeStyle = document.getElementById('control-theme-style');
 		this.controlVolume = document.getElementById('control-volume');
 		this.controlVolumeDisplay = document.getElementById('control-volume-display');
 		this.controlMic = document.getElementById('control-mic');
@@ -137,6 +148,19 @@ export class UI {
 		this.yesNoDialogYesButton.addEventListener('click', onYesClick, { once: true });
 		this.yesNoDialogNoButton.addEventListener('click', onNoClick, { once: true });
 		this.yesNoDialog.showModal();
+	}
+	setControlScale(isDisableDown, isDisableUp, value) {
+		this.controlScale.innerHTML = value;
+		if(isDisableDown) {
+			this.controlScaleDown.setAttribute('disabled', true);
+		} else {
+			this.controlScaleDown.removeAttribute('disabled');
+		}
+		if(isDisableUp) {
+			this.controlScaleUp.setAttribute('disabled', true);
+		} else {
+			this.controlScaleUp.removeAttribute('disabled');
+		}
 	}
 	setPlayButton(buttonElem, speed) {
 		const isFast = speed !== 1;

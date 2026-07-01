@@ -34,30 +34,32 @@ globalThis.bytebeat = new class {
 			colorWaveform: '#ffffff',
 			drawMode: scope.drawMode,
 			drawScale: scope.drawScale,
+			fftSize: scope.fftSize,
 			isSeconds: false,
 			showAllSongs: library.showAllSongs,
-			themeStyle: 'Default',
-			volume: .5,
-			audioSampleRate: 48000,
-			fftSize: 4096,
-			minDecibels: -70,
-			maxDecibels: -20
+			srDivisor: 1,
+			themeStyle: 'Default Dark',
+			volume: .5
 		};
 		this.isCompilationError = false;
 		this.isNeedClear = false;
+		this.isLagging = false;
 		this.isPlaying = false;
 		this.isRecording = false;
+		this.lastUpdateTime = 0;
 		this.mode = 'Bytebeat';
 		this.playbackSpeed = 1;
 		this.sampleRate = 8000;
 		this.settings = this.defaultSettings;
+		this.updateCounter = 0;
 		this.expectedDomain = 'chasyxx';
 		this.startError = null;
 		this.init();
 	}
-	handleEvent(e) {
-		let elem = e.target;
-		switch(e.type) {
+	handleEvent(event) {
+		let elem = event.target;
+		const { classList } = elem;
+		switch(event.type) {
 		case 'change':
 			switch(elem.id) {
 			case 'control-code-style': this.setCodeStyle(elem.value); break;
@@ -88,7 +90,7 @@ globalThis.bytebeat = new class {
 			case 'svg': elem = elem.parentNode; break;
 			case 'use': elem = elem.parentNode.parentNode; break;
 			default:
-				if(elem.classList.contains('control-fast-multiplier')) {
+				if(classList.contains('control-fast-multiplier')) {
 					elem = elem.parentNode;
 				}
 			}
@@ -105,9 +107,11 @@ globalThis.bytebeat = new class {
 			case 'control-play-forward': this.playbackToggle(true, true, 1); break;
 			case 'control-rec': this.toggleRecording(); break;
 			case 'control-reset': this.resetTime(); break;
-			case 'control-scale': this.setScale(-scope.drawScale); break;
-			case 'control-scaledown': this.setScale(-1, elem); break;
-			case 'control-scaleup': this.setScale(1); break;
+			case 'control-scale': this.resetScopeAdjustment(); break;
+			case 'control-scaledown': this.setScopeAdjustment(-1, elem); break;
+			case 'control-scaleup': this.setScopeAdjustment(1); break;
+			case 'control-srdivisor-down': this.setSRDivisor(-1); break;
+			case 'control-srdivisor-up': this.setSRDivisor(1); break;
 			case 'control-stop': this.playbackStop(); break;
 			case 'control-counter-units': this.toggleCounterUnits(); break;
 			case 'actions-format': this.formatCode(); break;
@@ -123,40 +127,58 @@ globalThis.bytebeat = new class {
 			// case 'actions-mic-test': this.micTest(); break;
 			case 'splash': this.setSplashtext(); break;
 			default:
-				if(elem.classList.contains('code-text')) {
+				switch(true) {
+				case classList.contains('code-text'):
 					this.loadCode(Object.assign({ code: elem.innerText },
 						elem.hasAttribute('data-songdata') ? JSON.parse(elem.dataset.songdata) : {}));
-					this.setSplashtext();
-				} else if(elem.classList.contains('code-load')) {
-					library.onclickCodeLoadButton(elem);
-					this.setSplashtext();
-				} else if(elem.classList.contains('code-remix-load')) {
-					library.onclickRemixLoadButton(elem);
-				} else if(elem.classList.contains('library-header')) {
-					library.onclickLibraryHeader(elem);
-				} else if(elem.parentNode.classList.contains('library-header')) {
+					break;
+				case classList.contains('code-load'): library.onclickCodeLoadButton(elem); break;
+				case classList.contains('code-remix-load'): library.onclickRemixLoadButton(elem); break;
+				case classList.contains('library-header'): library.onclickLibraryHeader(elem); break;
+				case elem.parentNode.classList.contains('library-header'):
 					library.onclickLibraryHeader(elem.parentNode);
+					break;
+				case classList.contains('song-hash'):
+					navigator.clipboard.writeText(elem.dataset.hash);
+					event.preventDefault();
+					break;
 				}
 			}
 			return;
 		case 'input':
 			switch(elem.id) {
-			case 'control-counter': this.oninputCounter(e); break;
+			case 'control-counter': this.oninputCounter(event); break;
 			case 'control-volume': this.setVolume(false); break;
 			}
 			return;
 		case 'keydown':
 			if(elem.id === 'control-counter') {
-				this.oninputCounter(e);
+				this.oninputCounter(event);
 			}
 			return;
 		case 'mouseover':
-			if(elem.classList.contains('code-load')) {
+			switch(true) {
+			case classList.contains('code-load'):
 				elem.title = `Click to play the ${ elem.dataset.type } code`;
-			} else if(elem.classList.contains('code-text')) {
-				elem.title = 'Click to play this code';
-			} else if(elem.classList.contains('songs-header')) {
-				elem.title = 'Click to show/hide the songs';
+				break;
+			case classList.contains('code-text'): elem.title = 'Click to play this code'; break;
+			case classList.contains('songs-header'): elem.title = 'Click to show/hide the songs'; break;
+			case classList.contains('song-hash'):
+				elem.title = 'Click to copy the song hash into clipboard';
+				break;
+			case classList.contains('tag-c'): elem.title = 'C-compatible code'; break;
+			case classList.contains('tag-console'):
+				elem.title = 'Outputs messages in the error console';
+				break;
+			case classList.contains('tag-drawing'):
+				elem.title = 'Generates art in the visualiser\'s scope';
+				break;
+			case classList.contains('tag-sample'):
+				elem.title = 'Uses encoded audio samples (PCM, for example)';
+				break;
+			case classList.contains('tag-slow'):
+				elem.title = 'May be performance issues. Try switching Chrome/Firefox.';
+				break;
 			}
 			return;
 		}
@@ -166,6 +188,7 @@ globalThis.bytebeat = new class {
 			this.settings = JSON.parse(localStorage.settings);
 			scope.drawMode = this.settings.drawMode;
 			scope.drawScale = this.settings.drawScale;
+			scope.setFFTSize(+this.settings.fftSize || 10);
 			library.showAllSongs = this.settings.showAllSongs;
 		} catch(err) {
 			this.saveSettings();
@@ -233,7 +256,7 @@ globalThis.bytebeat = new class {
 		this.setColorDiagram();
 		this.setColorWaveform();
 		this.setColorTimeCursor();
-		this.setScale(0);
+		this.setScopeAdjustment(0);
 		ui.settingsAudioRate.value = this.settings.audioSampleRate;
 		this.parseUrl();
 		this.sendData({ drawMode: scope.drawMode });
@@ -267,17 +290,28 @@ globalThis.bytebeat = new class {
 		});
 		this.audioGain = new GainNode(this.audioCtx);
 		this.audioGain.connect(this.audioCtx.destination);
-		this.analyserNode = new AnalyserNode(this.audioCtx, { fftSize: this.settings.fftSize, smoothingTimeConstant: 0, minDecibels: this.settings.minDecibels, maxDecibels: this.settings.maxDecibels });
-		this.analyserNode.connect(this.audioGain);
+		// Analyser for FFT mode
+		scope.analyser = [this.audioCtx.createAnalyser(), this.audioCtx.createAnalyser()];
+		scope.analyser[0].minDecibels = scope.analyser[1].minDecibels = scope.minDecibels;
+		scope.analyser[0].maxDecibels = scope.analyser[1].maxDecibels = scope.maxDecibels;
+		scope.setFFTAnalyzer();
+		const splitter = this.audioCtx.createChannelSplitter(2);
+		splitter.connect(scope.analyser[0], 0);
+		splitter.connect(scope.analyser[1], 1);
+		const analyserGain = new GainNode(this.audioCtx);
+		analyserGain.connect(splitter);
+		// AudioWorklet for main calculations processing
 		await this.audioCtx.audioWorklet.addModule('./build/audio-processor.mjs');
 		this.audioWorkletNode = new AudioWorkletNode(this.audioCtx, 'audioProcessor',
 			{ outputChannelCount: [2] });
-		this.audioWorkletNode.port.addEventListener('message', e => this.receiveData(e.data));
+		this.audioWorkletNode.port.addEventListener('message', event => this.receiveData(event.data));
 		this.audioWorkletNode.port.start();
-		this.audioWorkletNode.connect(this.analyserNode);
+		this.audioWorkletNode.connect(this.audioGain);
+		this.audioWorkletNode.connect(analyserGain);
+		// Recorder for recording audio files
 		const mediaDest = this.audioCtx.createMediaStreamDestination();
 		const audioRecorder = this.audioRecorder = new MediaRecorder(mediaDest.stream);
-		audioRecorder.addEventListener('dataavailable', e => this.audioRecordChunks.push(e.data));
+		audioRecorder.addEventListener('dataavailable', event => this.audioRecordChunks.push(event.data));
 		audioRecorder.addEventListener('stop', () => {
 			let fileName, type;
 			const types = ['audio/webm', 'audio/ogg'];
@@ -359,6 +393,7 @@ globalThis.bytebeat = new class {
 		this.mode = ui.controlPlaybackMode.value = mode = mode || 'Bytebeat';
 		editor.setValue(code);
 		this.setSampleRate(ui.controlSampleRate.value = +sampleRate || 8000, false);
+		this.setSRDivisor(0);
 		const data = {
 			mode,
 			sampleRate: this.sampleRate,
@@ -373,6 +408,8 @@ globalThis.bytebeat = new class {
 		data.setFunction = code;
 		if(drawMode) {
 			ui.controlDrawMode.value = scope.drawMode = drawMode;
+			scope.toggleTimeCursor();
+			scope.clearCanvas();
 			this.saveSettings();
 		}
 		if(scale !== undefined) {
@@ -380,14 +417,14 @@ globalThis.bytebeat = new class {
 		}
 		this.sendData(data);
 	}
-	oninputCounter(e) {
-		if(e.key === 'Enter') {
+	oninputCounter(event) {
+		if(event.key === 'Enter') {
 			ui.controlTime.blur();
 			this.playbackToggle(true);
 			return;
 		}
-		const { value } = ui.controlTime;
-		const byteSample = this.settings.isSeconds ? Math.round(value * this.sampleRate) : value;
+		const byteSample = this.settings.isSeconds ? Math.round(ui.controlTime.value * this.sampleRate) :
+			ui.controlTime.value;
 		this.setByteSample(byteSample);
 		this.sendData({ byteSample });
 	}
@@ -431,6 +468,11 @@ globalThis.bytebeat = new class {
 				scope.requestAnimationFrame(); // Main call for drawing in the scope
 			}
 		} else {
+			this.lastUpdateTime = 0;
+			this.updateCounter = 0;
+			this.isLagging = false;
+			ui.controlLag.innerText = '---';
+			ui.controlLag.classList.remove('control-lag-red');
 			if(this.isRecording) {
 				this.isRecording = false;
 				ui.controlRecord.classList.remove('control-recording');
@@ -481,6 +523,13 @@ globalThis.bytebeat = new class {
 			this.updateUrl();
 		}
 	}
+	resetScopeAdjustment() {
+		if(scope.drawMode === 'FFT') {
+			this.setFFTBins(-scope.fftSize + 10);
+		} else {
+			this.setScale(-scope.drawScale);
+		}
+	}
 	resetTime() {
 		this.isNeedClear = true;
 		this.sendData({ resetTime: true, playbackSpeed: this.playbackSpeed });
@@ -488,6 +537,7 @@ globalThis.bytebeat = new class {
 	saveSettings() {
 		this.settings.drawMode = scope.drawMode;
 		this.settings.drawScale = scope.drawScale;
+		this.settings.fftSize = scope.fftSize;
 		this.settings.showAllSongs = library.showAllSongs;
 		localStorage.settings = JSON.stringify(this.settings);
 	}
@@ -499,24 +549,34 @@ globalThis.bytebeat = new class {
 		if(this.isNeedClear && value === 0) {
 			this.isNeedClear = false;
 			scope.drawBuffer = [];
-			scope.clearCanvas();
 			scope.canvasTimeCursor.style.left = 0;
+			scope.clearCanvas();
 			if(!this.isPlaying) {
 				scope.canvasPlayButton.classList.add('canvas-initial');
 			}
 		}
 	}
 	setCodeStyle(value) {
-		if(value === undefined) {
-			if((value = this.settings.codeStyle) === undefined) {
-				value = this.settings.codeStyle = this.defaultSettings.codeStyle;
-				this.saveSettings();
-			}
-			editor.container.dataset.theme = value;
-			return;
+		if(value !== undefined) {
+			this.settings.codeStyle = value;
+			this.saveSettings();
+		} else if((value = this.settings.codeStyle) === undefined) {
+			value = this.settings.codeStyle = this.defaultSettings.codeStyle;
+			this.saveSettings();
 		}
-		editor.container.dataset.theme = this.settings.codeStyle = value;
-		this.saveSettings();
+		document.documentElement.dataset.syntax = value;
+		document.documentElement.dataset.syntaxType = value.endsWith('Light') ? 'light' : 'dark';
+	}
+	setColorDiagram(value) {
+		if(value !== undefined) {
+			this.settings.colorDiagram = value;
+			this.saveSettings();
+		} else if((value = this.settings.colorDiagram) === undefined) {
+			value = this.settings.colorDiagram = this.defaultSettings.colorDiagram;
+			this.saveSettings();
+		}
+		ui.controlColorDiagram.value = value;
+		ui.controlColorDiagramInfo.innerHTML = scope.getColorTest('colorDiagram', value);
 	}
 	setColorStereo(value) {
 		// value: Red=0, Green=1, Blue=2
@@ -534,17 +594,9 @@ globalThis.bytebeat = new class {
 		case 2: scope.colorChannels = [2, 0, 1]; break;
 		default: scope.colorChannels = [1, 0, 2];
 		}
-	}
-	setColorDiagram(value) {
-		if(value !== undefined) {
-			this.settings.colorDiagram = value;
-			this.saveSettings();
-		} else if((value = this.settings.colorDiagram) === undefined) {
-			value = this.settings.colorDiagram = this.defaultSettings.colorDiagram;
-			this.saveSettings();
+		if(scope.colorWaveform) {
+			scope.setStereoColors();
 		}
-		ui.controlColorDiagram.value = value;
-		ui.controlColorDiagramInfo.innerHTML = scope.getColorTest('colorDiagram', value);
 	}
 	setColorTimeCursor(value) {
 		if(value !== undefined) {
@@ -567,6 +619,7 @@ globalThis.bytebeat = new class {
 		}
 		ui.controlColorWaveform.value = value;
 		ui.controlColorWaveformInfo.innerHTML = scope.getColorTest('colorWaveform', value);
+		scope.setStereoColors();
 	}
 	setAudioSampleRate(value) {
 		if(value !== undefined) {
@@ -584,16 +637,51 @@ globalThis.bytebeat = new class {
 	}
 	setCounterValue(value) {
 		ui.controlTime.value = this.settings.isSeconds ? (value / this.sampleRate).toFixed(2) : value;
+		// Lag detection
+		this.updateCounter++;
+		if(this.updateCounter === 400) {
+			this.updateCounter = 0;
+			const time = Date.now();
+			if(this.lastUpdateTime) {
+				const lag =
+					Math.min(Math.max(Math.round((time - this.lastUpdateTime) * 37.5 / 400) - 100, 0), 999);
+				ui.controlLag.innerText = lag + '%';
+				if(lag > 3) {
+					if(!this.isLagging) {
+						this.isLagging = true;
+						ui.controlLag.classList.add('control-lag-red');
+					}
+				} else if(this.isLagging) {
+					this.isLagging = false;
+					ui.controlLag.classList.remove('control-lag-red');
+				}
+			}
+			this.lastUpdateTime = time;
+		}
 	}
 	setDrawMode(drawMode) {
 		scope.drawMode = drawMode;
+		this.setScopeAdjustment(0);
+		scope.toggleTimeCursor();
+		scope.clearCanvas();
 		this.saveSettings();
 		this.sendData({ drawMode });
+	}
+	setFFTBins(amount, buttonElem) {
+		if(buttonElem?.getAttribute('disabled')) {
+			return;
+		}
+		scope.setFFTSize(scope.fftSize + amount);
+		scope.setFFTAnalyzer();
+		scope.clearCanvas();
+		this.saveSettings();
+		ui.setControlScale(scope.fftSize >= 15, scope.fftSize <= 5,
+			scope.fftSize < 10 ? 2 ** scope.fftSize : `<sub>2</sub>${ scope.fftSize }`);
 	}
 	setPlaybackMode(mode) {
 		this.mode = mode;
 		this.updateUrl();
-		this.sendData({ mode });
+		this.sendData({ mode, setFunction: editor.value });
 	}
 	setSampleRate(sampleRate, isSendData = true) {
 		if(!sampleRate || !isFinite(sampleRate) ||
@@ -602,6 +690,7 @@ globalThis.bytebeat = new class {
 		) {
 			sampleRate = 8000;
 		}
+		sampleRate = Math.max(0.1, sampleRate);
 		switch(sampleRate) {
 		case 8000:
 		case 11025:
@@ -612,16 +701,24 @@ globalThis.bytebeat = new class {
 		case 48000: ui.controlSampleRateSelect.value = sampleRate; break;
 		default: ui.controlSampleRateSelect.selectedIndex = -1;
 		}
+		const oldSampleRate = this.sampleRate;
 		ui.controlSampleRate.value = this.sampleRate = sampleRate;
 		ui.controlSampleRate.blur();
 		ui.controlSampleRateSelect.blur();
 		scope.toggleTimeCursor();
 		if(isSendData) {
-			this.updateUrl();
-			this.sendData({
+			const data = {
 				sampleRate: this.sampleRate,
 				sampleRatio: this.sampleRate / this.audioCtx.sampleRate
-			});
+			};
+			if(this.mode === 'Funcbeat') {
+				data.byteSample = Math.round(ui.controlTime.value * sampleRate /
+					(this.settings.isSeconds ? 1 : oldSampleRate));
+				this.setCounterValue(data.byteSample);
+				this.setByteSample(data.byteSample);
+			}
+			this.updateUrl();
+			this.sendData(data);
 		}
 	}
 	setMindB(dB) {
@@ -663,19 +760,36 @@ globalThis.bytebeat = new class {
 		if(buttonElem?.getAttribute('disabled')) {
 			return;
 		}
-		const scale = Math.max(scope.drawScale + amount, 0);
-		scope.drawScale = scale;
-		ui.controlScale.innerHTML = !scale ? '1x' :
-			scale < 7 ? `1/${ 2 ** scale }${ scale < 4 ? 'x' : '' }` :
-			`<sub>2</sub>-${ scale }`;
-		this.saveSettings();
-		scope.clearCanvas();
+		scope.drawScale = Math.min(Math.max(scope.drawScale + amount, 0), 20);
 		scope.toggleTimeCursor();
-		if(scope.drawScale <= 0) {
-			ui.controlScaleDown.setAttribute('disabled', true);
+		scope.clearCanvas();
+		this.saveSettings();
+		ui.setControlScale(scope.drawScale <= 0, scope.drawScale >= 20,
+			!scope.drawScale ? '1x' :
+			scope.drawScale < 7 ? `1/${ 2 ** scope.drawScale }${ scope.drawScale < 4 ? 'x' : '' }` :
+			`<sub>2</sub>-${ scope.drawScale }`);
+	}
+	setScopeAdjustment(amount, buttonElem) {
+		if(scope.drawMode === 'FFT') {
+			ui.controlScaleDown.title = 'Use more FFT bins';
+			ui.controlScaleUp.title = 'Use less FFT bins';
+			ui.controlScale.title = 'FFT bins. Click to reset to 1024';
+			this.setFFTBins(-amount, buttonElem);
 		} else {
-			ui.controlScaleDown.removeAttribute('disabled');
+			ui.controlScaleDown.title = 'Zoom in the scope';
+			ui.controlScaleUp.title = 'Zoom out the scope';
+			ui.controlScale.title = 'Scope zoom factor. Click to reset to 1.';
+			this.setScale(amount, buttonElem);
 		}
+	}
+	setSRDivisor(increment) {
+		const value = (this.settings.srDivisor || 1) + increment;
+		if(value === 0) {
+			return;
+		}
+		ui.controlSRDivisor.textContent = this.settings.srDivisor = value;
+		this.saveSettings();
+		this.sendData({ srDivisor: value });
 	}
 	setThemeStyle(value) {
 		if(value === undefined) {
@@ -684,30 +798,36 @@ globalThis.bytebeat = new class {
 				this.saveSettings();
 			}
 			document.documentElement.dataset.theme = value;
+			document.documentElement.dataset.themeType = value.endsWith('Light') ? 'light' : 'dark';
 			return;
 		}
 		document.documentElement.dataset.theme = this.settings.themeStyle = value;
+		document.documentElement.dataset.themeType = value.endsWith('Light') ? 'light' : 'dark';
 		let colorCursor, colorDiagram;
 		let colorStereo = 1; // Red=0, Green=1, Blue=2
 		switch(value) {
-		case 'Cake':
+		case 'Cake Dark':
 			colorCursor = '#40ffff';
-			colorDiagram = '#ff00ff';
+			colorDiagram = '#c000c0';
 			colorStereo = 0;
 			break;
-		case 'Orange':
+		case 'Green Dark':
+			colorCursor = '#00ffa8';
+			colorDiagram = '#00a080';
+			break;
+		case 'Orange Dark':
 			colorCursor = '#ffff80';
 			colorDiagram = '#8000ff';
 			colorStereo = 0;
 			break;
-		case 'Purple':
+		case 'Purple Dark':
 			colorCursor = '#ff50ff';
 			colorDiagram = '#a040ff';
 			colorStereo = 0;
 			break;
-		case 'Teal':
+		case 'Teal Dark':
 			colorCursor = '#80c0ff';
-			colorDiagram = '#00ffff';
+			colorDiagram = '#00a0c0';
 			break;
 		default:
 			colorCursor = '#00ff00';
