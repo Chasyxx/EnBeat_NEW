@@ -27,7 +27,6 @@ export const splashes = [
     "Spot the references in these splashtexts!",
     "Metal pipe moment",
     'See an issue? <a href="https://github.com/Chasyxx/EnBeat_NEW/issues" target="_blank">Let me know!!</a>',
-    "<i>A TypeScript (TS) enum is a special type in TypeScript that allows you to define a set of named constants. Enums can be thought of as a collection of related values that are easier to read and maintain than plain strings or numbers. They can be used to improve the readability of your code by providing a set of clear, distinct values that can be used in place of numbers or strings.</i><br> &mdash;ChatGPT",
     "wth what is this text above me",
     "I dunno, man, I <i>might</i> have eighty televisions, but if I do, <i>they're all 1080p!</i>",
     "Reject all else, 8 bit computing is the way!",
@@ -68,5 +67,6 @@ export const splashes = [
     "&quot;As hard as it may be, sometimes you have to leave from what leaves you in a worse place.&quot;<br> &mdash; Chasyxx, 2025",
     "&quot;As hard as it is, anything can disappear when you are least prepared.&quot;<br> &mdash; Chasyxx, 2025",
     "RIP Bytebeat Classic Discord<br>Gone without warning...<br>2023 - 2025",
-    "Join <a href=\"https://discord.gg/z3VwfyRkPC\">the discord</a>!"
+    "Join <a href=\"https://discord.gg/z3VwfyRkPC\">the discord</a>!",
+    "I have nothing to do with my time. Well, I have everything to do, but I'm putting it into making this."
 ];

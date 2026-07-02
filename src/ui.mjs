@@ -31,7 +31,6 @@ export class UI {
 		this.controlTimeUnits = null;
 		this.controlThemeStyle = null;
 		this.controlVolume = null;
-		this.controlVolumeDisplay = null;
 		this.controlMic = null;
 		this.actionAutoformat = null;
 		this.controlMaxParens = null;
@@ -92,7 +91,6 @@ export class UI {
 		this.controlTime = document.getElementById('control-counter');
 		this.controlTimeUnits = document.getElementById('control-counter-units');
 		this.controlVolume = document.getElementById('control-volume');
-		this.controlVolumeDisplay = document.getElementById('control-volume-display');
 		this.controlMic = document.getElementById('control-mic');
 		this.actionAutoformat = document.getElementById('actions-format');
 		this.controlMaxParens = document.getElementById('control-maxparens');

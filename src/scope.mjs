@@ -246,6 +246,7 @@ export class Scope {
 						value * colorDiagram[0] | 0,
 						value * colorDiagram[1] | 0,
 						value * colorDiagram[2] | 0];
+					for(let x = curX; x !== nextX; x = mod(x + 1, width)) {
 						for(let y = 0; y < diagramSize; ++y) {
 							const idx = drawWidth * (diagramStart + y) + x;
 							const s = status[idx];

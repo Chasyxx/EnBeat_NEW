@@ -272,15 +272,19 @@ globalThis.bytebeat = new class {
 		this.setSplashtext();
 		if(!window.location.hostname.includes(this.expectedDomain) &&
 		!window.location.hostname.startsWith('127.') &&
-		!window.location.hostname.startsWith('::1') &&
+		!window.location.hostname.includes('::1') &&
 		!window.location.hostname.includes('local')) {
 			ui.okAlert(
-				`[ALERT]\n\nThe expected domain '${ this.expectedDomain }' was not found.\n` +
-				`While this site might just be a skid of '${ this.expectedDomain }' ` +
-				`(try looking up '${ this.expectedDomain } bytebeat player'),\n` +
-				'this site has softened up from before and will still let you use it.\n' +
-				'Hopefully you find the original. Hope for the best.\n\n' +
-				` - Creator of ${ this.expectedDomain } bytebeat player`);
+				`The expected domain "${this.expectedDomain}" wasn't found.\n`+
+				`This can mean three things: whoever's modifying this just forgot to change it, `+
+				`it can't really be changed (for example if the changes here will be brought back to the original page), `+
+				`or this is some random kid trying to modify this page when they have no idea what they're actually doing.\n`+
+				`I don't think anybody likes somebody else randomly taking your work when `+
+				`they don't even know what to do with it, which is why I put this here, but `+
+				`I also still want to be nice considering that is definetly not the only thing that could've happened, `+
+				`so you can still use this page just fine.\n`+
+				`Try searching for the "${this.expectedDomain} bytebeat player", and remember always have hope!`
+			);
 		}
 	}
 	async initAudio() {
@@ -639,12 +643,12 @@ globalThis.bytebeat = new class {
 		ui.controlTime.value = this.settings.isSeconds ? (value / this.sampleRate).toFixed(2) : value;
 		// Lag detection
 		this.updateCounter++;
-		if(this.updateCounter === 400) {
-			this.updateCounter = 0;
+		const maxUpdates = Math.ceil(400 * this.settings.audioSampleRate / 48000);
+		if(this.updateCounter >= maxUpdates) {
 			const time = Date.now();
 			if(this.lastUpdateTime) {
 				const lag =
-					Math.min(Math.max(Math.round((time - this.lastUpdateTime) * 37.5 / 400) - 100, 0), 999);
+					Math.round(Math.max(0,Math.min(999,(time-this.lastUpdateTime)/this.updateCounter*this.settings.audioSampleRate/1280-100)));
 				ui.controlLag.innerText = lag + '%';
 				if(lag > 3) {
 					if(!this.isLagging) {
@@ -657,6 +661,7 @@ globalThis.bytebeat = new class {
 				}
 			}
 			this.lastUpdateTime = time;
+			this.updateCounter = 0;
 		}
 	}
 	setDrawMode(drawMode) {
@@ -848,7 +853,6 @@ globalThis.bytebeat = new class {
 		}
 		ui.controlVolume.value = this.settings.volume = volumeValue;
 		ui.controlVolume.title = `Volume: ${ (volumeValue * 100).toFixed(0) }%`;
-		ui.controlVolumeDisplay.textContent = `${ (volumeValue * 100).toFixed(0) }%`;
 		this.saveSettings();
 		this.audioGain.gain.value = volumeValue * volumeValue;
 	}

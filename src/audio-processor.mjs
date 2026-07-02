@@ -12,6 +12,7 @@ class audioProcessor extends AudioWorkletProcessor {
 		this.lastByteValue = [null, null];
 		this.lastFuncValue = [null, null];
 		this.lastByteValue = [0, 0];
+		this.lastTime = -1;
 		this.outValue = [0, 0];
 		this.playbackSpeed = 1;
 		this.sampleRate = 8000;
@@ -210,13 +211,13 @@ class audioProcessor extends AudioWorkletProcessor {
 				case 'logmode':
 					this.getValues = (funcValue, ch) => (this.lastByteValue[ch] = (Math.log2(funcValue) * 32) & 255) / 127.5 - 1;
 					break;
-				case 'logHack':
+				case 'loghack':
 					this.getValues = (funcValue, ch) => {
 						const neg = (funcValue < 0) ? -32 : 32;
 						return (this.lastByteValue[ch] = (Math.log2(Math.abs(funcValue)) * neg) & 255) / 127.5 - 1;
 					};
 					break;
-				case 'logHack2':
+				case 'loghack2':
 					this.getValues = (funcValue, ch) => {
 						const neg = funcValue < 0
 						return funcValue == 0 ? 0 : ((this.lastByteValue[ch] = ((Math.log2(Math.abs(funcValue)) * (neg ? -16 : 16)) + (neg ? -127 : 128)) & 255) / 127.5 - 1);
