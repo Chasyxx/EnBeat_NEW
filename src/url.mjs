@@ -67,7 +67,8 @@ export function getDollchanUrlFromCode(code, mode, sampleRate) {
 	for(let i = 0; i < outputArr.length; i++) {
 		str += String.fromCharCode(outputArr[i]);
 	}
-	window.location.hash = '4' + btoa(str).replaceAll('=', '');
+	// window.location.hash = '4' + btoa(str).replaceAll('=', '');
+	return 'https://dollchan.net/bytebeat/#4' + btoa(str).replaceAll('=', '');
 }
 
 export function getUrlFromCode(code, mode, sampleRate) {

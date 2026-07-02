@@ -1,4 +1,5 @@
 import { formatBytes } from './utils.mjs';
+import { getDollchanUrlFromCode } from './url.mjs';
 
 export class UI {
 	constructor() {
@@ -58,6 +59,9 @@ export class UI {
 	}
 	copyLink() {
 		navigator.clipboard.writeText(window.location);
+	}
+	copyDollchanLink(...params) {
+		navigator.clipboard.writeText(getDollchanUrlFromCode(...params));
 	}
 	expandEditor() {
 		this.containerFixed.classList.toggle('container-expanded');

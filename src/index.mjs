@@ -103,6 +103,7 @@ globalThis.bytebeat = new class {
 			case 'control-pause': this.playbackToggle(false); break;
 			case 'control-expand': ui.expandEditor(); break;
 			case 'control-link': ui.copyLink(); break;
+			case 'control-dollchan-link': ui.copyDollchanLink(editor.value, this.mode, this.sampleRate); break;
 			case 'control-play-backward': this.playbackToggle(true, true, -1); break;
 			case 'control-play-forward': this.playbackToggle(true, true, 1); break;
 			case 'control-rec': this.toggleRecording(); break;
