@@ -219,10 +219,11 @@
 						</ul></p>
 						<p>Obviously using any of these makes your code incompatible with Dollchan and I only have these here for compatibility reasons and because they haven't broken yet. <strong>Doesn't mean they aren't deprecated. They are.</strong><br>
 						There's some extra sound modes too, and some minibaking functions, but those are deprecated too.<br>
-						There were at some points a spectrogram and "triads" (3 channel output) but I didn't like how these were implemented at first and were since scrapped during resyncs with Dollchan.</p>
+						There were at some points a spectrogram and "triads" (3 channel output) but I didn't like how these were implemented at first and were since scrapped during resyncs with Dollchan.
+						I wouldn't be surprised if some unused remnants of these lie deep in the code, though.</p>
 						<p>The main thing this player adds is a sound input, alongside the output! This is usually a mic so that's how i have it called but it's really just an input.<br>
 						You get this at the 4th Funcbet parameter (the third is the sample count), and as the `_micSample` variable. Both are in [left,right,mono] floatbeat format.
-						There's also the "Control panel" on the right to adjust variables with sliders and the like.</p>
+						There's also the "Slider panel" on the right to adjust variables with sliders and the like.</p>
 					</section>
 					<section>
 						<p>This project is made by Chasyxx, and is a fork of <a href="http://dollchan.net/bytebeat/" target="_blank">StephanShi's player on Dollchan</a>.</p>
@@ -395,8 +396,11 @@
 			</details>
 			<details class="library-content">
 				<summary class="library-header">
-					<h1>Control panel</h1>
+					<h1>Slider panel</h1>
 				</summary>
+				<article id="slider-panel">
+					Mode: <select class="control-select"><option value="view">View</option><option value="edit">Edit</option></select>
+				</article>
 			</details>
 			<footer>
 				<a class="link" href="https://dollchan.net/btb/" title="Dollchan bytebeat discussion threads" target="_blank">Discussion board</a><br>
