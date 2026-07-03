@@ -1046,7 +1046,7 @@ globalThis.bytebeat = new class {
 			select.classList.add('slider-type', 'control-select', 'controls-grow');
 			top.classList.add('slider-top');
 			select.innerHTML = '<option value="N" selected>Number</option><option value="S">Text</option>';
-			function handleSelectChange(val) {
+			const handleSelectChange=(val)=>{
 				top.innerHTML="";
 				data.type = val;
 				switch(val) {
@@ -1071,10 +1071,11 @@ globalThis.bytebeat = new class {
 						sliderElem.min = data.low;
 						sliderElem.max = data.high;
 						sliderElem.step = data.step === 0 ? 'any' : Math.abs(data.step);
-						sliderElem.addEventListener('input', function() {
+						sliderElem.addEventListener('input', ()=>{
 							valueElem.innerText = data.val = parseFloat(sliderElem.value);
+							this.updateSliderVariable(data);
 						});
-						sliderElem.addEventListener('change', getUrlFromCode);
+						sliderElem.addEventListener('change', ()=>getUrlFromCode(editor.value, this.mode, this.sampleRate));
 						sliderElem.tabIndex = 0;
 						group.appendChild(sliderElem);
 						top.appendChild(group);
@@ -1121,14 +1122,22 @@ globalThis.bytebeat = new class {
 						area.classList.add('slider-text');
 						area.tabIndex = 0;
 						area.value = data.text;
-						area.addEventListener('change', function() { data.text = area.value; });
+						area.addEventListener('change', ()=>{
+							data.text = area.value;
+							this.updateSliderVariable(data);
+							getUrlFromCode(editor.value, this.mode, this.sampleRate);
+						});
 						top.appendChild(area);
 					} break;
 					default: top.innerHTML = 'error!'; break;
 				}
 			}
 			handleSelectChange(select.value='N');
-			select.addEventListener('change',()=>handleSelectChange(select.value));
+			select.addEventListener('change',()=>{
+				handleSelectChange(select.value);
+				this.updateSliderVariable(data);
+				getUrlFromCode(editor.value, this.mode, this.sampleRate);
+			});
 			group.appendChild(select); root.appendChild(group);
 
 			group = document.createElement('div'); group.classList.add('controls-group', 'controls-grow');
@@ -1141,6 +1150,7 @@ globalThis.bytebeat = new class {
 			nameElem.tabIndex = 0;
 			nameElem.addEventListener('change', function() {
 				viewName.innerText = data.name = nameElem.value;
+				getUrlFromCode(editor.value, this.mode, this.sampleRate);
 			});
 			group.appendChild(nameElem);
 			root.appendChild(group);
@@ -1153,8 +1163,10 @@ globalThis.bytebeat = new class {
 			varElem.value = data.var;
 			varElem.title = "Slider variable name";
 			varElem.tabIndex = 0;
-			varElem.addEventListener('change', function() {
+			varElem.addEventListener('change', ()=>{
 				data.var = varElem.value;
+				this.setSliderVariables();
+				getUrlFromCode(editor.value, this.mode, this.sampleRate);
 			});
 			group.appendChild(varElem);
 			root.appendChild(group);
@@ -1170,10 +1182,33 @@ globalThis.bytebeat = new class {
 			removeElem.addEventListener('click', ()=>{
 				ui.sliders.removeChild(root);
 				const index = this.sliders.indexOf(data);
-				if(index!==-1) this.sliders.splice(index, 1);
+				if(index!==-1) {
+					this.sliders.splice(index, 1);
+					this.setSliderVariables();
+					getUrlFromCode(editor.value, this.mode, this.sampleRate);
+				}
 			});
 			group.appendChild(removeElem);
 			root.appendChild(group);
 		ui.sliders.appendChild(root);
+		this.setSliderVariables();
+	}
+	setSliderVariables() {
+		let setVariables = new Map();
+		for(const slider of this.sliders) {
+			switch(slider.type) {
+				case 'N': setVariables.set(slider.var, +slider.val); break;
+				case 'S': setVariables.set(slider.var, slider.text); break;
+				default: console.warn('unknown type', slider.type); break;
+			}
+		}
+		this.sendData({ setVariables, setFunction: editor.value });
+	}
+	updateSliderVariable(data) {
+		switch(data.type) {
+			case 'N': this.sendData({ updateVariable: [ data.var, +data.val ] }); break;
+			case 'S': this.sendData({ updateVariable: [ data.var, data.text ] }); break;
+			default: console.warn('unknown type', data.type); break;
+		}
 	}
 }();

@@ -18,6 +18,7 @@ class audioProcessor extends AudioWorkletProcessor {
 		this.sampleRate = 8000;
 		this.sampleRatio = 1;
 		this.srDivisor = 1;
+		this.customVariables = new Map();
 		Object.seal(this);
 		audioProcessor.deleteGlobals();
 		audioProcessor.freezeGlobals();
@@ -85,9 +86,9 @@ class audioProcessor extends AudioWorkletProcessor {
 					const micSample = [inputs00i, inputs01i, inputs00i / 2 + inputs01i / 2];
 					if(this.isFuncbeat) {
 						funcValue = this.func(currentSample / this.sampleRate, this.sampleRate,
-							currentSample, micSample);
+							currentSample, micSample, ...this.customVariables.values());
 					} else {
-						funcValue = this.func(currentSample, micSample);
+						funcValue = this.func(currentSample, micSample, ...this.customVariables.values());
 					}
 				} catch(err) {
 					if(this.errorDisplayed) {
@@ -227,6 +228,8 @@ class audioProcessor extends AudioWorkletProcessor {
 				default: this.getValues = (_funcValue) => NaN;
 			}
 		}
+		if(data.setVariables !== undefined) this.customVariables = data.setVariables;
+		if(data.updateVariable !== undefined) this.customVariables.set(data.updateVariable[0], data.updateVariable[1]);
 		if(data.setFunction !== undefined) {
 			this.setFunction(data.setFunction);
 		}
@@ -301,15 +304,15 @@ class audioProcessor extends AudioWorkletProcessor {
 				codeText = codeText.trim().replace(
 					/^eval\(unescape\(escape(?:`|\('|\("|\(`)(.*?)(?:`|'\)|"\)|`\)).replace\(\/u\(\.\.\)\/g,["'`]\$1%["'`]\)\)\)$/,
 					(match, m1) => unescape(escape(m1).replace(/u(..)/g, '$1%')));
-				this.func = new Function(...params, 't', '_micSample', `return 0,\n${ codeText || 0 };`)
+				this.func = new Function(...params, 't', '_micSample', ...this.customVariables.keys(), `return 0,\n${ codeText || 0 };`)
 					.bind(globalThis, ...values);
 			}
 			isCompiled = true;
 			if(this.isFuncbeat) {
 				this.func = this.func();
-				this.func(0, this.sampleRate, 0, [0, 0, 0]);
+				this.func(0, this.sampleRate, 0, [0, 0, 0], ...this.customVariables.values());
 			} else {
-				this.func(0, [0, 0, 0]);
+				this.func(0, [0, 0, 0], ...this.customVariables.values());
 			}
 		} catch(err) {
 			if(!isCompiled) {
