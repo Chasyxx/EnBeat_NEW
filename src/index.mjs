@@ -4,7 +4,7 @@ import { Scope } from './scope.mjs';
 import { UI } from './ui.mjs';
 import { getCodeFromUrl, getUrlFromCode } from './url.mjs';
 import { Actions } from './actions.mjs';
-import { splashes } from './splashes.mjs';
+import { Splashes } from './splashes.mjs';
 
 import { FavoriteGenerator } from './generator.mjs';
 import { Prec } from '@codemirror/state';
@@ -54,6 +54,7 @@ globalThis.bytebeat = new class {
 		this.updateCounter = 0;
 		this.expectedDomain = 'chasyxx';
 		this.startError = null;
+		this.sliders = [];
 		this.init();
 	}
 	handleEvent(event) {
@@ -75,10 +76,8 @@ globalThis.bytebeat = new class {
 			case 'control-mode': this.setPlaybackMode(elem.value); break;
 			case 'control-samplerate':
 			case 'control-samplerate-select': this.setSampleRate(+elem.value); break;
-			case 'settings-mindb': this.setMindB(+elem.value); break;
-			case 'settings-maxdb': this.setMaxdB(+elem.value); break;
-			case 'settings-fftsize': this.setFFTSize(+elem.value); break;
 			case 'control-theme-style': this.setThemeStyle(elem.value); break;
+			case 'sliders-mode': ui.setSlidersMode(elem.value); break;
 			case 'library-show-all':
 				library.toggleAll(elem, elem.checked);
 				this.saveSettings();
@@ -115,6 +114,7 @@ globalThis.bytebeat = new class {
 			case 'control-srdivisor-up': this.setSRDivisor(1); break;
 			case 'control-stop': this.playbackStop(); break;
 			case 'control-counter-units': this.toggleCounterUnits(); break;
+			case 'sliders-add': this.addSlider(); break;
 			case 'actions-format': this.formatCode(); break;
 			case 'actions-minibake': this.bake(); break;
 			case 'actions-deminibake': this.debake(); break;
@@ -392,7 +392,7 @@ globalThis.bytebeat = new class {
 		!window.location.hostname.startsWith('[::1]') &&
 		!window.location.hostname.includes('local'))
 			ui.splashElem.innerHTML = 'Featuring the Disturbance in the Force!';
-		else ui.splashElem.innerHTML = splashes[Math.random()*splashes.length|0];
+		else ui.splashElem.innerHTML = Splashes[Math.random()*Splashes.length|0];
 	}
 	loadCode({ code, sampleRate, mode, drawMode, scale }, isPlay = true) {
 		this.mode = ui.controlPlaybackMode.value = mode = mode || 'Bytebeat';
@@ -1026,5 +1026,154 @@ globalThis.bytebeat = new class {
 		} catch(e) {
 			this.favoriteErrorBox(e);
 		}
+	}
+	addSlider(data = { type: 'N', name: 'Unlabelled', var: 'slider', val: 50, low: 0, high: 100, step: 1, text: 'Add text' }) {
+		let index = this.sliders.indexOf(data);
+		if(index===-1) {
+			index=this.sliders.length;
+			this.sliders.push(data);
+		}
+		const root = document.createElement('div');
+		root.classList.add('slider-panel'/*, 'slider-'+type+'-panel'*/);
+			const viewName = document.createElement('div');
+			viewName.classList.add('control-label', 'slider-view-name');
+			viewName.innerText = data.name;
+			root.appendChild(viewName);
+
+			let group = document.createElement('div'); group.classList.add('controls-group', 'controls-grow');
+			const select = document.createElement('select');
+			const top = document.createElement('div');
+			select.classList.add('slider-type', 'control-select', 'controls-grow');
+			top.classList.add('slider-top');
+			select.innerHTML = '<option value="N" selected>Number</option><option value="S">Text</option>';
+			function handleSelectChange(val) {
+				top.innerHTML="";
+				data.type = val;
+				switch(val) {
+					case 'N': {
+						// <div class="controls-group controls-grow">
+						// 		<div class="control-label slider-value">value</div>
+						// 		<input type="range" min="0" max="1" step="0.1" class="control-slider slider-slider" tabindex="0">
+						// 		<button class="control-button control-text-button slider-remove" tabindex="0">Remove</button>
+						// 	</div>
+						let group2 = document.createElement('div'); group2.classList.add('controls-group');
+						const valueElem = document.createElement('div');
+						valueElem.classList.add('control-label', 'slider-value', 'controls-grow');
+						valueElem.innerText = data.val;
+						group2.appendChild(valueElem);
+
+						let group = document.createElement('div'); group.classList.add('controls-group', 'controls-grow');
+
+						const sliderElem = document.createElement('input');
+						sliderElem.type = 'range';
+						sliderElem.classList.add('control-slider', 'slider-slider');
+						sliderElem.value = data.val;
+						sliderElem.min = data.low;
+						sliderElem.max = data.high;
+						sliderElem.step = data.step === 0 ? 'any' : Math.abs(data.step);
+						sliderElem.addEventListener('input', function() {
+							valueElem.innerText = data.val = parseFloat(sliderElem.value);
+						});
+						sliderElem.addEventListener('change', getUrlFromCode);
+						sliderElem.tabIndex = 0;
+						group.appendChild(sliderElem);
+						top.appendChild(group);
+						top.appendChild(group2);
+
+						// 	<div class="controls-group controls-grow slider-params">
+						// 		<input type="number" class="control-text slider-bound slider-low" value="0" title="Slider low" tabindex="0">
+						// 		<span class="control-label">to</span>
+						// 		<input type="number" class="control-text slider-bound slider-high" value="1" title="Slider high" tabindex="0">
+						// 		<span class="control-label">step</span>
+						// 		<input type="number" class="control-text slider-bound slider-step" value="0.1" title="Slider step" tabindex="0">
+						// 	</div>
+
+						group = document.createElement('div'); group.classList.add('controls-group', 'controls-grow', 'slider-params');
+						const minElem = document.createElement('input');
+						const maxElem = document.createElement('input');
+						const stepElem = document.createElement('input');
+						minElem.type = maxElem.type = stepElem.type = 'number';
+						minElem.classList.add('control-text', 'slider-bound', 'slider-low');
+						maxElem.classList.add('control-text', 'slider-bound', 'slider-high');
+						stepElem.classList.add('control-text', 'slider-bound', 'slider-step');
+						minElem.value = data.low; maxElem.value = data.high; stepElem.value = data.step;
+						minElem.title = "Slider low"; maxElem.title = "Slider high"; stepElem.title = "Slider step";
+						minElem.tabIndex = maxElem.tabIndex = stepElem.tabIndex = 0;
+						minElem.addEventListener('change', function() { sliderElem.min = data.low = parseFloat(minElem.value); });
+						maxElem.addEventListener('change', function() { sliderElem.max = data.high = parseFloat(maxElem.value); });
+						stepElem.addEventListener('change', function() { const h = parseFloat(stepElem.value); sliderElem.step = data.step = h === 0 ? 'any' : Math.abs(h); });
+						const toLabel = document.createElement('span');
+						const stepLabel = document.createElement('span');
+						toLabel.classList.add('control-label');
+						stepLabel.classList.add('control-label');
+						toLabel.innerText = 'to';
+						stepLabel.innerText = 'step';
+						group.appendChild(minElem);
+						group.appendChild(toLabel);
+						group.appendChild(maxElem);
+						group.appendChild(stepLabel);
+						group.appendChild(stepElem);
+						top.appendChild(group);
+					} break;
+					case 'S': {
+						// <textarea class="slider-text" tabindex="0">value</textarea>
+						const area = document.createElement('textarea');
+						area.classList.add('slider-text');
+						area.tabIndex = 0;
+						area.value = data.text;
+						area.addEventListener('change', function() { data.text = area.value; });
+						top.appendChild(area);
+					} break;
+					default: top.innerHTML = 'error!'; break;
+				}
+			}
+			handleSelectChange(select.value='N');
+			select.addEventListener('change',()=>handleSelectChange(select.value));
+			group.appendChild(select); root.appendChild(group);
+
+			group = document.createElement('div'); group.classList.add('controls-group', 'controls-grow');
+			// <input type="text" class="control-text slider-edit-name" value="name" title="Slider name" tabindex="0">
+			const nameElem = document.createElement('input');
+			nameElem.type = 'text';
+			nameElem.classList.add('control-text', 'slider-edit-name');
+			nameElem.value = data.name;
+			nameElem.title = "Slider name";
+			nameElem.tabIndex = 0;
+			nameElem.addEventListener('change', function() {
+				viewName.innerText = data.name = nameElem.value;
+			});
+			group.appendChild(nameElem);
+			root.appendChild(group);
+
+			group = document.createElement('div'); group.classList.add('controls-group', 'controls-grow');
+			// <input type="text" class="control-text slider-edit-name" value="name" title="Slider name" tabindex="0">
+			const varElem = document.createElement('input');
+			varElem.type = 'text';
+			varElem.classList.add('control-text', 'slider-variable');
+			varElem.value = data.var;
+			varElem.title = "Slider variable name";
+			varElem.tabIndex = 0;
+			varElem.addEventListener('change', function() {
+				data.var = varElem.value;
+			});
+			group.appendChild(varElem);
+			root.appendChild(group);
+
+			root.appendChild(top);
+
+			group = document.createElement('div'); group.classList.add('controls-group', 'controls-grow');
+			// <input type="text" class="control-text slider-edit-name" value="name" title="Slider name" tabindex="0">
+			const removeElem = document.createElement('button');
+			removeElem.classList.add('control-button', 'control-text-button', 'slider-remove', 'controls-grow');
+			removeElem.innerText = "Remove";
+			removeElem.tabIndex = 0;
+			removeElem.addEventListener('click', ()=>{
+				ui.sliders.removeChild(root);
+				const index = this.sliders.indexOf(data);
+				if(index!==-1) this.sliders.splice(index, 1);
+			});
+			group.appendChild(removeElem);
+			root.appendChild(group);
+		ui.sliders.appendChild(root);
 	}
 }();

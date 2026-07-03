@@ -50,12 +50,11 @@ export class UI {
 		this.favoritesList = null;
 		this.settingsAudioRate = null;
 		this.settingsAudioRateApplyButton = null;
-		this.settingsFFTSize = null;
-		this.settingsMindB = null;
-		this.settingsMaxdB = null;
 		this.downloader = null;
 		this.splashElem = null;
 		this.mainElem = null;
+		this.sliders = null;
+		this.slidersAdd = null;
 	}
 	copyLink() {
 		navigator.clipboard.writeText(window.location);
@@ -65,6 +64,11 @@ export class UI {
 	}
 	expandEditor() {
 		this.containerFixed.classList.toggle('container-expanded');
+	}
+	setSlidersMode(v) {
+		this.sliders.classList.remove('sliders-view', 'sliders-edit');
+		this.sliders.classList.add('sliders-'+v);
+		this.slidersAdd.disabled = v !== 'edit';
 	}
 	initElements() {
 		this.containerFixed = document.getElementById('container-fixed');
@@ -113,12 +117,18 @@ export class UI {
 		this.favoritesList = document.getElementById('favorites-content');
 		this.settingsAudioRate = document.getElementById('settings-audiorate');
 		this.settingsAudioRateApplyButton = document.getElementById('settings-audiorate-apply');
-		this.settingsFFTSize = document.getElementById('settings-fftsize');
-		this.settingsMindB = document.getElementById('settings-mindb');
-		this.settingsMaxdB = document.getElementById('settings-maxdb');
 		this.downloader = document.getElementById('downloader');
 		this.splashElem = document.getElementById('splash');
 		this.mainElem = document.getElementById('content');
+		this.sliders = document.getElementById('sliders');
+		this.slidersAdd = document.getElementById('sliders-add');
+		this.slidersMode = document.getElementById('sliders-mode');
+
+		// fight firefox (which tries to preserve other options)
+		this.sliders.classList.remove('sliders-edit');
+		this.sliders.classList.add('sliders-view');
+		this.slidersMode.value='view';
+		this.slidersAdd.disabled = true;
 	}
 	setCodeSize(value) {
 		this.controlCodeSize.textContent =

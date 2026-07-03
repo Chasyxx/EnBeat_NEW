@@ -13,7 +13,6 @@ export function getCodeFromUrl(hash) {
 			const codeLength = view.getFloat64(5, 1);
 			const code = inflateRaw(new Uint8Array(dataArr.buffer, 13, codeLength), { to: 'string' });
 			let reader = 13 + codeLength;
-			console.log(reader, dataArr.length);
 			songData = {
 				mode,
 				sampleRate,

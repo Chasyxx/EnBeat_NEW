@@ -4,15 +4,15 @@
 <head>
 	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
-	<meta name="description" content="Bytebeat player with a collection of many formulas from around the internet">
-	<meta name="author" content="SthephanShi">
-	<title>Bytebeat composer</title>
-	<link rel="canonical" href="https://dollchan.net/bytebeat/">
+	<meta name="description" content="Bytebeat player with a collection of many formulas from around the internet; Chasyxx fork with various unique features">
+	<meta name="author" content="Chasyxx">
+	<title>Chasyxx's Bytebeat player</title>
+	<link rel="canonical" href="https://chasyxx.github.io/EnBeat_NEW/">
 	<link rel="shortcut icon" href="favicon.png">
-	<link rel="stylesheet" type="text/css" href="style.css?version=2025121200">
-	<link rel="modulepreload" href="./build/audio-processor.mjs?version=2025121200">
-	<script type="module" async src="./build/index.js?version=2025121200"></script>
-	<script src="./build/theme.js?version=2025121200"></script>
+	<link rel="stylesheet" type="text/css" href="style.css?version=july2">
+	<link rel="modulepreload" href="./build/audio-processor.mjs?version=july2">
+	<script type="module" async src="./build/index.js?version=july2"></script>
+	<script src="./build/theme.js?version=july2"></script>
 </head>
 <body>
 <div id="log"></div>
@@ -100,7 +100,7 @@
 					</div>
 				</div>
 				<div class="controls-group controls-grow">
-					<input id="control-volume" type="range" min="0" max="1" value=".5" step="any" title="Volume">
+					<input class="control-slider" id="control-volume" type="range" min="0" max="1" value=".5" step="any" title="Volume">
 				</div>
 				<!-- <span class="control-label" id="control-volume-display">...%</span> -->
 				<button id="control-mic" class="control-button control-text-button" title="Mic is deactivated. Click to activate.">
@@ -397,12 +397,17 @@
 					</label>
 				</article>
 			</details>
-			<details class="library-content">
+			<details class="library-content" open>
 				<summary class="library-header">
 					<h1>Slider panel</h1>
 				</summary>
 				<article id="slider-panel" class="library-container entry loaded">
-					Mode: <select class="control-select"><option value="view">View</option><option value="edit">Edit</option></select>
+					<div class="controls-group">
+						<span class="control-label">Mode:</span><select id="sliders-mode" class="control-select" tabindex="0"><option value="view" selected>View</option><option value="edit">Edit</option></select>
+						<button id="sliders-add" class="control-button control-text-button" tabindex="0" disabled>Add slider</button>
+						<button id="sliders-random" class="control-button control-text-button" tabindex="0">Randomise slider values</button>
+					</div>
+					<div id="sliders" class="sliders-view"></div>
 				</article>
 			</details>
 			<footer>

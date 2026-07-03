@@ -2,17 +2,9 @@
 Live editing algorithmic music generator with a collection of many formulas from around the internet.
 
 > [!IMPORTANT]
-> ## Before you create an issue
-> Do not create issues suggesting new sound modes or new functions.
-> Even if these were the original purpose of the player,
-> it is now intended to be a more advanced bytebeat player compared to Dollchan.
->
-> I share the sentiment that you can create the functions in the bytebeat code itself,
-> and make converters from your preferred mode to Floatbeat/Funcbeat,
-> rather than try to get players to make their own built-in functions.
->
-> Any issues I see that just serve to add new modes/functions will be closed as not planned.
-> This is what I've already done and is what I will continue to do in the future.
+> Please don't create issues suggesting new sound modes or custom functions.
+> I will close these as not planned.
+> Even if these were the original purpose of the player, they aren't anymore.
 
 **Access player at https://chasyxx.github.io/EnBeat_NEW/**<br>
 **Dollchan discission threads https://dollchan.net/btb**
@@ -20,7 +12,7 @@ Live editing algorithmic music generator with a collection of many formulas from
 ![UI buttons and a visualiser showing sierpinski triangles](https://user-images.githubusercontent.com/105890603/229014766-38a7c067-55d3-4120-9ed8-2a8aeb4c1f20.png)
 
 ## List of features compared to dollchan
-* Spectrogram (Plots pitches of the sound output in real time)
+* Slider panel (Parameterisation of your code)
 * Mic input (Useful for creating DSP filters or modems instead of songs)
 * Customizable sample rate for ultrasonic sound cards and/or higher-quality string simulation
 * Big codes still update the link (dollchan has problems with this and has closed the issue regarding it)

@@ -1136,13 +1136,46 @@ button[name="close"] {
 	color: var(--link-hover-color) !important;
 }
 
-.entry {
+#sliders {
+	display: flex;
+	flex-direction: row;
+	justify-content: left;
+	flex-wrap: wrap;
+	margin-top: 1em;
+}
+
+.sliders-view .slider-remove,
+.sliders-view .slider-params,
+.sliders-view .slider-edit-name,
+.sliders-view .slider-variable,
+.sliders-view .slider-type,
+.sliders-edit .slider-view-name
+{
+	display: none;
+}
+
+.entry, .slider-panel, .slider-text {
 	width: fit-content;
 	margin-bottom: 8px;
 	padding: 3px 4px 3px 6px;
 	border: 1px solid var(--entry-border);
 	background-color: var(--entry-bg);
 	border-left: 4px solid var(--entry-border-left);
+	overflow: scroll;
+}
+
+.slider-text {
+	width: 20em;
+	height: 10em;
+	background-color: var(--editor-bg);
+}
+
+.slider-top {
+	border: 1px dashed var(--entry-border);
+}
+
+.slider-slider {
+	width: 20em;
 }
 
 .entry.star-1::before, .entry.star-2::before {
@@ -1282,6 +1315,10 @@ button[name="close"] {
 
 .control-text-button, .control-label {
 	padding: 0 10px 0 10px !important
+}
+
+.control-label {
+	text-align: center;
 }
 
 .control-button:not([disabled]):hover, .control-select:hover {
@@ -1465,13 +1502,19 @@ button[name="close"] {
 	box-shadow: inset 0 0 12px rgba(202, 202, 202, 0.5);
 }
 
+.slider-bound {
+	width: 5em;
+}
+
 #control-maxparens {
 	width: 3em;
 }
 
 #control-volume {
 	width: 120px;
-	flex-grow: 1;
+}
+
+.control-slider {
 	appearance: none;
 	height: 10px;
 	margin: 10px 0;
@@ -1480,7 +1523,7 @@ button[name="close"] {
 	align-self: center;
 }
 
-#control-volume::-moz-range-thumb {
+.control-slider::-moz-range-thumb {
 	width: 10px;
 	height: var(--ctrl-size);
 	border: none;
@@ -1489,11 +1532,11 @@ button[name="close"] {
 	cursor: pointer;
 }
 
-#control-volume::-moz-range-thumb:hover {
+.control-slider::-moz-range-thumb:hover {
 	background-image: var(--ctrl-btn-hover-bg);
 }
 
-#control-volume::-webkit-slider-thumb {
+.control-slider::-webkit-slider-thumb {
 	appearance: none;
 	width: 10px;
 	height: var(--ctrl-size);
@@ -1503,7 +1546,7 @@ button[name="close"] {
 	cursor: pointer;
 }
 
-#control-volume::-webkit-slider-thumb:hover {
+.control-slider::-webkit-slider-thumb:hover {
 	background-image: var(--ctrl-btn-hover-bg);
 }
 
@@ -1520,7 +1563,7 @@ button[name="close"] {
 	filter: var(--ctrl-filter);
 }
 
-.controls-group > .control-button {
+.controls-group > .control-button, .controls-group > .control-select, .controls-group > .control-label {
 	border-left: 1px solid var(--ctrl-btn-border);
 	border-radius: 0;
 }

@@ -1,4 +1,4 @@
-export const splashes = [
+export const Splashes = [
     "Wdym 'this.func is not a function'!?",
     "[object Object]",
     "WOO!",
