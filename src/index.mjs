@@ -1228,7 +1228,7 @@ globalThis.bytebeat = new class {
 	randomiseSliders() {
 		ui.sliders.innerHTML = "";
 		for(const slider of this.sliders) {
-			slider.val = Math.round(Math.random() * (slider.high-slider.low) / slider.step) * slider.step + slider.low;
+			slider.val = Math.floor(Math.random() * (slider.high-slider.low) * (slider.step+1) / slider.step) * slider.step + slider.low;
 			this.addSlider(slider, false);
 		}
 		this.setSliderVariables();
