@@ -114,7 +114,7 @@ globalThis.bytebeat = new class {
 			case 'control-srdivisor-up': this.setSRDivisor(1); break;
 			case 'control-stop': this.playbackStop(); break;
 			case 'control-counter-units': this.toggleCounterUnits(); break;
-			case 'sliders-add': this.addSlider(); break;
+			case 'sliders-add': this.addSlider(); this.updateUrl(); break;
 			case 'actions-format': this.formatCode(); break;
 			case 'actions-minibake': this.bake(); break;
 			case 'actions-deminibake': this.debake(); break;
@@ -394,7 +394,7 @@ globalThis.bytebeat = new class {
 			ui.splashElem.innerHTML = 'Featuring the Disturbance in the Force!';
 		else ui.splashElem.innerHTML = Splashes[Math.random()*Splashes.length|0];
 	}
-	loadCode({ code, sampleRate, mode, drawMode, scale }, isPlay = true) {
+	loadCode({ code, sampleRate, mode, drawMode, scale, sliders }, isPlay = true) {
 		this.mode = ui.controlPlaybackMode.value = mode = mode || 'Bytebeat';
 		editor.setValue(code);
 		this.setSampleRate(ui.controlSampleRate.value = +sampleRate || 8000, false);
@@ -420,6 +420,12 @@ globalThis.bytebeat = new class {
 		if(scale !== undefined) {
 			this.setScale(scale - scope.drawScale);
 		}
+		ui.sliders.innerHTML = "";
+		if(sliders) {
+			this.sliders = sliders;
+			for(const slider of this.sliders) this.addSlider(slider, false);
+			data.setVariables = this.setSliderVariables(false);
+		} else this.sliders = [];
 		this.sendData(data);
 	}
 	oninputCounter(event) {
@@ -908,7 +914,12 @@ globalThis.bytebeat = new class {
 	updateUrl() {
 		const code = editor.value;
 		ui.setCodeSize(code);
-		getUrlFromCode(code, this.mode, this.sampleRate);
+		try {
+			getUrlFromCode(code, this.mode, this.sampleRate, this.sliders);
+		} catch(e) {
+			console.error(e);
+			ui.okAlert(e instanceof Error ? `Failed to update URL: ${e.name}, ${e.message}` : `Failed to update URL: ${String(e)}`);
+		}
 	}
 	favoriteErrorBox(error) {
 		ui.yesNoAlert(`${ error.message }\n\n${ error.stack }\n\n` +
@@ -1027,7 +1038,8 @@ globalThis.bytebeat = new class {
 			this.favoriteErrorBox(e);
 		}
 	}
-	addSlider(data = { type: 'N', name: 'Unlabelled', var: 'slider', val: 50, low: 0, high: 100, step: 1, text: 'Add text' }) {
+	addSlider(data, update = true) {
+		data ??= { type: 'N', name: 'Unlabelled', var: 'slider', val: 50, low: 0, high: 100, step: 1, text: 'Add text' };
 		let index = this.sliders.indexOf(data);
 		if(index===-1) {
 			index=this.sliders.length;
@@ -1075,7 +1087,7 @@ globalThis.bytebeat = new class {
 							valueElem.innerText = data.val = parseFloat(sliderElem.value);
 							this.updateSliderVariable(data);
 						});
-						sliderElem.addEventListener('change', ()=>getUrlFromCode(editor.value, this.mode, this.sampleRate));
+						sliderElem.addEventListener('change', ()=>this.updateUrl());
 						sliderElem.tabIndex = 0;
 						group.appendChild(sliderElem);
 						top.appendChild(group);
@@ -1125,18 +1137,18 @@ globalThis.bytebeat = new class {
 						area.addEventListener('change', ()=>{
 							data.text = area.value;
 							this.updateSliderVariable(data);
-							getUrlFromCode(editor.value, this.mode, this.sampleRate);
+							this.updateUrl();
 						});
 						top.appendChild(area);
 					} break;
 					default: top.innerHTML = 'error!'; break;
 				}
 			}
-			handleSelectChange(select.value='N');
+			handleSelectChange(select.value=data.type);
 			select.addEventListener('change',()=>{
 				handleSelectChange(select.value);
 				this.updateSliderVariable(data);
-				getUrlFromCode(editor.value, this.mode, this.sampleRate);
+				this.updateUrl();
 			});
 			group.appendChild(select); root.appendChild(group);
 
@@ -1148,9 +1160,9 @@ globalThis.bytebeat = new class {
 			nameElem.value = data.name;
 			nameElem.title = "Slider name";
 			nameElem.tabIndex = 0;
-			nameElem.addEventListener('change', function() {
+			nameElem.addEventListener('change', ()=>{
 				viewName.innerText = data.name = nameElem.value;
-				getUrlFromCode(editor.value, this.mode, this.sampleRate);
+				this.updateUrl();
 			});
 			group.appendChild(nameElem);
 			root.appendChild(group);
@@ -1166,7 +1178,7 @@ globalThis.bytebeat = new class {
 			varElem.addEventListener('change', ()=>{
 				data.var = varElem.value;
 				this.setSliderVariables();
-				getUrlFromCode(editor.value, this.mode, this.sampleRate);
+				this.updateUrl();
 			});
 			group.appendChild(varElem);
 			root.appendChild(group);
@@ -1185,15 +1197,15 @@ globalThis.bytebeat = new class {
 				if(index!==-1) {
 					this.sliders.splice(index, 1);
 					this.setSliderVariables();
-					getUrlFromCode(editor.value, this.mode, this.sampleRate);
+					this.updateUrl();
 				}
 			});
 			group.appendChild(removeElem);
 			root.appendChild(group);
 		ui.sliders.appendChild(root);
-		this.setSliderVariables();
+		if(update) this.setSliderVariables();
 	}
-	setSliderVariables() {
+	setSliderVariables(send = true) {
 		let setVariables = new Map();
 		for(const slider of this.sliders) {
 			switch(slider.type) {
@@ -1202,7 +1214,8 @@ globalThis.bytebeat = new class {
 				default: console.warn('unknown type', slider.type); break;
 			}
 		}
-		this.sendData({ setVariables, setFunction: editor.value });
+		if(send) this.sendData({ setVariables, setFunction: editor.value });
+		return setVariables;
 	}
 	updateSliderVariable(data) {
 		switch(data.type) {

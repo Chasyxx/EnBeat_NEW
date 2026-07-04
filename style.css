@@ -1321,6 +1321,10 @@ button[name="close"] {
 	text-align: center;
 }
 
+.slider-view-name {
+	height: fit-content;
+}
+
 .control-button:not([disabled]):hover, .control-select:hover {
 	background-image: var(--ctrl-btn-hover-bg);
 	color: var(--ctrl-btn-hover-color);
