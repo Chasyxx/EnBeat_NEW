@@ -115,6 +115,7 @@ globalThis.bytebeat = new class {
 			case 'control-stop': this.playbackStop(); break;
 			case 'control-counter-units': this.toggleCounterUnits(); break;
 			case 'sliders-add': this.addSlider(); this.updateUrl(); break;
+			case 'sliders-random': this.randomiseSliders(); break;
 			case 'actions-format': this.formatCode(); break;
 			case 'actions-minibake': this.bake(); break;
 			case 'actions-deminibake': this.debake(); break;
@@ -1223,5 +1224,14 @@ globalThis.bytebeat = new class {
 			case 'S': this.sendData({ updateVariable: [ data.var, data.text ] }); break;
 			default: console.warn('unknown type', data.type); break;
 		}
+	}
+	randomiseSliders() {
+		ui.sliders.innerHTML = "";
+		for(const slider of this.sliders) {
+			slider.val = Math.floor(Math.random() * (slider.high-slider.low) / slider.step) * slider.step + slider.low;
+			this.addSlider(slider, false);
+		}
+		this.setSliderVariables();
+		this.updateUrl();
 	}
 }();
