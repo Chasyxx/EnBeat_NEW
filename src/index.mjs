@@ -1079,10 +1079,10 @@ globalThis.bytebeat = new class {
 						const sliderElem = document.createElement('input');
 						sliderElem.type = 'range';
 						sliderElem.classList.add('control-slider', 'slider-slider');
-						sliderElem.value = data.val;
 						sliderElem.min = data.low;
 						sliderElem.max = data.high;
 						sliderElem.step = data.step === 0 ? 'any' : Math.abs(data.step);
+						sliderElem.value = data.val;
 						sliderElem.addEventListener('input', ()=>{
 							valueElem.innerText = data.val = parseFloat(sliderElem.value);
 							this.updateSliderVariable(data);
