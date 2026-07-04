@@ -1115,7 +1115,7 @@ globalThis.bytebeat = new class {
 						minElem.tabIndex = maxElem.tabIndex = stepElem.tabIndex = 0;
 						minElem.addEventListener('change', function() { sliderElem.min = data.low = parseFloat(minElem.value); });
 						maxElem.addEventListener('change', function() { sliderElem.max = data.high = parseFloat(maxElem.value); });
-						stepElem.addEventListener('change', function() { const h = parseFloat(stepElem.value); sliderElem.step = (data.step = h) === 0 ? 'any' : Math.abs(h); });
+						stepElem.addEventListener('change', function() { sliderElem.step = (data.step = parseFloat(stepElem.value)) === 0 ? 'any' : Math.abs(h); });
 						const toLabel = document.createElement('span');
 						const stepLabel = document.createElement('span');
 						toLabel.classList.add('control-label');
